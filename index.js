@@ -38,6 +38,7 @@ const start = async (opts) => {
   status.timestamp = new Date().toISOString()
   const u = new URL.URL(opts.url)
   status.hostname = u.hostname
+  status._meta = 'meta'
 
   // write meta data
   console.log(JSON.stringify(status))
