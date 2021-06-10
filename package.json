@@ -1,0 +1,32 @@
+{
+  "name": "couchsnap",
+  "version": "0.1.0",
+  "description": "Very minimal CouchDB snapshot tool",
+  "main": "index.js",
+  "scripts": {
+    "standard": "standard --fix"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/glynnbird/couchsnap.git"
+  },
+  "keywords": [
+    "CouchDB"
+  ],
+  "author": "Glynn Bird <glynn.bird@gmail.com>",
+  "license": "Apache-2.0",
+  "bugs": {
+    "url": "https://github.com/glynnbird/couchsnap/issues"
+  },
+  "homepage": "https://github.com/glynnbird/couchsnap#readme",
+  "dependencies": {
+    "nano": "^9.0.3",
+    "yargs": "^17.0.1"
+  },
+  "bin": {
+    "couchsnap": "bin/couchsnap.bin.js"
+  },
+  "devDependencies": {
+    "standard": "^16.0.3"
+  }
+}
