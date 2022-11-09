@@ -1,6 +1,6 @@
 # couchsnap
 
-Super-simple CouchDB snapshotting tool
+Super-simple CouchDB snapshotting tool for creating incremental snapshots of the winning revisions of a Apache CouchDB or Cloudant database.
 
 ## Installation
 
@@ -19,23 +19,60 @@ Environment variables:
 
 ## Usage
 
-To spool the winning revisions of every document to stdout:
+Put your CouchDB URL (with credentials) in an environment variable:
 
 ```sh
-# to stdout
-couchsnap --db mydb
-
-# to a file
-couchsnap --db mydb > mydb.txt
+$ export COUCH_URL="https://username:password@mycouchdb.myhost.com"
 ```
 
-> Note that if a document changes during the snapshotting process, it may appear more than once in the output.
+Create a snapshot:
 
-## Output format
-
-- one document per line
-- last line contains meta data
-
-```js
-{"lastSeq":"23578-g1AAAA","numChanges":23537,"db":"mydb","timestamp":"2021-06-10T12:29:15.196Z","hostname":"myhost.cloudant.com"}
+```sh
+$ couchsnap --db mydb
+spooling changes for mydb since 0
+Writing to new output file mydb-snapshot-2022-11-09T16:04:06.195Z.jsonl
 ```
+
+At a later date, another snapshot can be taken:
+
+```sh
+$ couchsnap --db mydb
+spooling changes for mydb since 23597-*****
+Writing to new output file mydb-snapshot-2022-11-09T16:04:51.041Z.jsonl
+```
+
+Ad infinitum.
+
+## Finding a document's history
+
+For a known document id e.g. `abc123`:
+
+```sh
+grep "abc123" mydb-snapshot-*
+```
+
+## Restoring a database
+
+Each backup file contains one document per line so we can feed this data to [couchimport](https://www.npmjs.com/package/couchimport) using its 'jsonl' mode. To ensure that we insert the newest data first, we can concatenate the snapshots in newest-first order:
+
+```sh
+# list the files in reverse time order, "cat" them and send them to couchimport
+ls -t mydb-snapshot-* | xargs cat | couchimport --db mydb2 --type jsonl
+```
+
+> Note this restores to a new empty database "mydb2".
+
+## How does it work?
+
+`couchsnap` simply spools the changes feed storing the winning revisions of each non-deleted document to a file - one row line per document. The documents are stored without their revision tokens (`_rev`) to avoid creating conflicts on restore.
+
+When snapshotting a database, two files are created:
+
+```
+<database>-snapshot-<timestamp>.jsonl
+<database>-meta.json
+```
+
+The meta file contains meta data about where the last snapshot left off, so that a new snapshot can resume from the location.
+
+> Note: The nature of the CouchDB changes feed means that some snapshots may contain duplicate changes as the changes feed only guarantees "at least once" delivery.
