@@ -1,6 +1,11 @@
 # couchsnap
 
-Super-simple CouchDB snapshotting tool for creating incremental snapshots of the winning revisions of a Apache CouchDB or Cloudant database.
+Super-simple CouchDB snapshotting tool for creating incremental snapshots of the winning revisions of documents in a Apache CouchDB or Cloudant database.
+
+- winning revisions only of documents and design documents
+- no deletions
+- no attachments
+- no conflicts
 
 ## Installation
 
@@ -15,7 +20,7 @@ $ npm install -g couchsnap
 Environment variables:
 
 - `COUCH_URL` - the URL of your CouchDB service e.g. `http://user:pass@myhost.com`
-- `COUCH_DATABASE` - the name of the database to work with e.g. `orders`
+- `COUCH_DATABASE` - (optional) the name of the database to work with e.g. `orders`
 
 ## Usage
 
@@ -52,7 +57,7 @@ Ad infinitum.
 For a known document id e.g. `abc123`:
 
 ```sh
-grep "abc123" mydb-snapshot-*
+grep -h "abc123" mydb-snapshot-*
 ```
 
 ## Restoring a database
@@ -62,9 +67,19 @@ Each backup file contains one document per line so we can feed this data to [cou
 ```sh
 # list the files in reverse time order, "cat" them and send them to couchimport
 ls -t mydb-snapshot-* | xargs cat | couchimport --db mydb2 --type jsonl
+# or use "tac" to reverse the order of each file
+ls -t mydb-snapshot-* | xargs tac | couchimport --db mydb2 --type jsonl
 ```
 
-> Note this restores to a new empty database "mydb2".
+Some caveats:
+
+1. This only restores to a new empty database.
+2. Deleted documents are neither backed-up nor restored
+3. The restored documents will have a new `_rev` token. e.g. `1-abc123`. i.e. the restored database would be unsuitable for a replicating relationship with the original database (as they have different revision histories).
+4. Attachments are neither backud-up or restored.
+5. Conflicting document revisions are neither backed-up nor restored.
+6. Secondary index definitions (in design documents) are backed up but will need to be rebuilt on restore.
+
 
 ## How does it work?
 
