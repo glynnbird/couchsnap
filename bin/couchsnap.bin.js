@@ -12,3 +12,5 @@ const args = require('yargs')
 // start the snapshot
 const couchsnap = require('../index.js')
 couchsnap.start(args)
+  .then(console.log)
+  .catch(console.error)

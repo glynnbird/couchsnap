@@ -1,5 +1,6 @@
 const Nano = require('nano')
 const fs = require('fs')
+const URL = require('url').URL
 
 // download a whole changes feed in one long HTTP request
 const spoolChanges = async (db, opts) => {
@@ -18,10 +19,12 @@ const spoolChanges = async (db, opts) => {
           opts.ws.write(JSON.stringify(change.doc) + '\n')
           numChanges++
         }
-      }).on('end', (since) => {
+      })
+      .on('end', (since) => {
         // pass back the last known sequence token
         resolve({ since, numChanges })
-      }).on('error', reject)
+      })
+      .on('error', reject)
   })
 }
 
@@ -69,6 +72,14 @@ const start = async (opts) => {
   }
   opts = Object.assign(defaults, opts)
 
+  // check URL is valid
+  try {
+    new URL(opts.url)
+  } catch(e) {
+    console.error('Invalid URL')
+    process.exit(1)
+  }
+
   // configure nano
   const nano = Nano({ url: opts.url })
   const db = nano.db.use(opts.database)
@@ -77,17 +88,24 @@ const start = async (opts) => {
   const meta = await loadMeta(opts.database)
   opts.since = meta.since
   meta.startTime = new Date().toISOString()
-  console.log(`spooling changes for ${meta.db} since ${shortenSince(meta.since)}`)
-
-  // create new output file
   const outputFilename = `${meta.db}-snapshot-${meta.startTime}.jsonl`
   const tempOutputFile = `_tmp_${outputFilename}`
-  opts.ws = fs.createWriteStream(tempOutputFile)
+  let status
 
-  // spool changes
-  const status = await spoolChanges(db, opts)
-  console.log(`Written ${status.numChanges} changes`)
-  opts.ws.end()
+  try {
+    // create new output file
+    console.log(`spooling changes for ${meta.db} since ${shortenSince(meta.since)}`)
+    opts.ws = fs.createWriteStream(tempOutputFile)
+
+    // spool changes
+    status = await spoolChanges(db, opts)
+    console.log(`Written ${status.numChanges} changes`)
+    opts.ws.end()
+  } catch (e) {
+    console.error('Failed to spool changes from CouchDB')
+    console.error(e)
+    process.exit(2)
+  }
 
   // copy tmp file to actual output file
   fs.renameSync(tempOutputFile, outputFilename)
