@@ -107,6 +107,8 @@ const start = async (opts) => {
   } catch (e) {
     console.error('Failed to spool changes from CouchDB')
     console.error(e.toString())
+    // remove temp file
+    fs.unlinkSync(tempOutputFile)
     process.exit(2)
   }
 
