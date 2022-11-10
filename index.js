@@ -1,14 +1,16 @@
-const Nano = require('nano')
+const ChangesReader = require('./changesreader.js')
 const fs = require('fs')
 const URL = require('url').URL
 
 // download a whole changes feed in one long HTTP request
-const spoolChanges = async (db, opts) => {
-  // return a Promise
+const spoolChanges = async (url, db, since, ws) => {
+  const cr = new ChangesReader(url, db)
   let numChanges = 0
-  return new Promise((resolve, reject) => {
-    db.changesReader.spool({ since: opts.since, includeDocs: true, fastChanges: true })
-      .on('batch', async (batch) => {
+  // return a Promise
+  return new Promise(async (resolve, reject) => {
+    try {
+      const stream = await cr.spool({ since, includeDocs: true })
+      stream.on('batch', async (batch) => {
         for (const change of batch) {
           // ignore deletions
           if (change.doc._deleted) {
@@ -16,15 +18,18 @@ const spoolChanges = async (db, opts) => {
           }
           // remove the _rev
           delete change.doc._rev
-          opts.ws.write(JSON.stringify(change.doc) + '\n')
+          ws.write(JSON.stringify(change.doc) + '\n')
           numChanges++
         }
       })
-      .on('end', (since) => {
+        .on('end', (since) => {
         // pass back the last known sequence token
-        resolve({ since, numChanges })
-      })
-      .on('error', reject)
+          resolve({ since, numChanges })
+        })
+        .on('error', reject)
+    } catch (e) {
+      reject(e)
+    }
   })
 }
 
@@ -75,14 +80,10 @@ const start = async (opts) => {
   // check URL is valid
   try {
     new URL(opts.url)
-  } catch(e) {
+  } catch (e) {
     console.error('Invalid URL')
     process.exit(1)
   }
-
-  // configure nano
-  const nano = Nano({ url: opts.url })
-  const db = nano.db.use(opts.database)
 
   // load any previous meta data
   const meta = await loadMeta(opts.database)
@@ -95,15 +96,17 @@ const start = async (opts) => {
   try {
     // create new output file
     console.log(`spooling changes for ${meta.db} since ${shortenSince(meta.since)}`)
-    opts.ws = fs.createWriteStream(tempOutputFile)
+    const ws = fs.createWriteStream(tempOutputFile)
 
     // spool changes
-    status = await spoolChanges(db, opts)
+    status = await spoolChanges(opts.url, opts.database, opts.since, ws)
     console.log(`Written ${status.numChanges} changes`)
-    opts.ws.end()
+
+    // close the write stream
+    ws.end()
   } catch (e) {
     console.error('Failed to spool changes from CouchDB')
-    console.error(e)
+    console.error(e.toString())
     process.exit(2)
   }
 
