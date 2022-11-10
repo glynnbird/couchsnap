@@ -9,6 +9,6 @@ const args = require('yargs')
   .help('help')
   .argv
 
-// start the data warehouse
+// start the snapshot
 const couchsnap = require('../index.js')
 couchsnap.start(args)

@@ -30,7 +30,9 @@ Create a snapshot:
 ```sh
 $ couchsnap --db mydb
 spooling changes for mydb since 0
-Writing to new output file mydb-snapshot-2022-11-09T16:04:06.195Z.jsonl
+Written 3600 changes
+to new output file mydb-snapshot-2022-11-09T16:04:06.195Z.jsonl
+Written meta data file
 ```
 
 At a later date, another snapshot can be taken:
@@ -38,7 +40,9 @@ At a later date, another snapshot can be taken:
 ```sh
 $ couchsnap --db mydb
 spooling changes for mydb since 23597-*****
-Writing to new output file mydb-snapshot-2022-11-09T16:04:51.041Z.jsonl
+Written 245 changes
+to new output file mydb-snapshot-2022-11-09T16:04:51.041Z.jsonl
+Written meta data file
 ```
 
 Ad infinitum.

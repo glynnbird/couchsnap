@@ -11,16 +11,16 @@ const spoolChanges = async (db, opts) => {
         for (const change of batch) {
           // ignore deletions
           if (change.doc._deleted) {
-            continue
+            return
           }
           // remove the _rev
           delete change.doc._rev
           opts.ws.write(JSON.stringify(change.doc) + '\n')
           numChanges++
         }
-      }).on('end', (lastSeq) => {
+      }).on('end', (since) => {
         // pass back the last known sequence token
-        resolve({ since: lastSeq, numChanges })
+        resolve({ since, numChanges })
       }).on('error', reject)
   })
 }
@@ -54,6 +54,7 @@ const shortenSince = (since) => {
   }
 }
 
+// save the latest meta data JSON
 const saveMeta = async (meta) => {
   const filename = calculateMetaFilename(meta.db)
   fs.writeFileSync(filename, JSON.stringify(meta), { encoding: 'utf8' })
@@ -80,18 +81,23 @@ const start = async (opts) => {
 
   // create new output file
   const outputFilename = `${meta.db}-snapshot-${meta.startTime}.jsonl`
-  console.log('Writing to new output file', outputFilename)
-  opts.ws = fs.createWriteStream(outputFilename)
+  const tempOutputFile = `_tmp_${outputFilename}`
+  opts.ws = fs.createWriteStream(tempOutputFile)
 
   // spool changes
   const status = await spoolChanges(db, opts)
+  console.log(`Written ${status.numChanges} changes`)
   opts.ws.end()
+
+  // copy tmp file to actual output file
+  fs.renameSync(tempOutputFile, outputFilename)
+  console.log(`to new output file ${outputFilename}`)
 
   // write new meta data
   meta.endTime = new Date().toISOString()
-  meta.since = status.since
-  meta.numChanges = status.numChanges
+  Object.assign(meta, status)
   await saveMeta(meta)
+  console.log('Written meta data file')
 
   // die
   process.exit(0)
