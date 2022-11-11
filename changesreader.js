@@ -118,7 +118,10 @@ class ChangesReader {
     const lin = liner()
     const cp = changeProcessor(self.ee, self.batchSize)
     const response = await axios.request(req)
-    response.data.pipe(lin)
+    response.data.on(EVENT_ERROR, (e) => {
+        self.ee.emit(EVENT_ERROR, e)
+      })
+      .pipe(lin)
       .pipe(cp)
       .on('finish', () => {
         // the 'end' event was triggering before the last data event
@@ -126,9 +129,7 @@ class ChangesReader {
           self.ee.emit('end', cp.lastSeq)
         }, 10)
       })
-      .on(EVENT_ERROR, (e) => {
-        self.ee.emit(EVENT_ERROR, e)
-      })
+
 
     return self.ee
   }
