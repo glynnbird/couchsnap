@@ -69,7 +69,6 @@ const start = async (opts) => {
 
     // spool changes
     status = await changesreader(opts.url, opts.database, opts.since, ws)
-    console.log('Finished fetching changes')
 
     // close the write stream
     ws.end()
@@ -83,13 +82,13 @@ const start = async (opts) => {
 
   // copy tmp file to actual output file
   fs.renameSync(tempOutputFile, outputFilename)
-  console.log(`to new output file ${outputFilename}`)
+  console.log(outputFilename)
 
   // write new meta data
   meta.endTime = new Date().toISOString()
   Object.assign(meta, status)
   await saveMeta(meta)
-  console.log('Written meta data file')
+  console.log(calculateMetaFilename(opts.database))
 
   // die
   process.exit(0)
