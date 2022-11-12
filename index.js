@@ -1,37 +1,6 @@
-const ChangesReader = require('./changesreader.js')
+const changesreader = require('./changesreader.js')
 const fs = require('fs')
 const URL = require('url').URL
-
-// download a whole changes feed in one long HTTP request
-const spoolChanges = async (url, db, since, ws) => {
-  const cr = new ChangesReader(url, db)
-  let numChanges = 0
-  // return a Promise
-  return new Promise(async (resolve, reject) => {
-    try {
-      const stream = await cr.spool({ since, includeDocs: true })
-      stream.on('batch', async (batch) => {
-        for (const change of batch) {
-          // ignore deletions
-          if (change.doc._deleted) {
-            return
-          }
-          // remove the _rev
-          delete change.doc._rev
-          ws.write(JSON.stringify(change.doc) + '\n')
-          numChanges++
-        }
-      })
-        .on('end', (since) => {
-        // pass back the last known sequence token
-          resolve({ since, numChanges })
-        })
-        .on('error', reject)
-    } catch (e) {
-      reject(e)
-    }
-  })
-}
 
 // calculate the filename where metadata is stored
 const calculateMetaFilename = (database) => {
@@ -99,8 +68,8 @@ const start = async (opts) => {
     const ws = fs.createWriteStream(tempOutputFile)
 
     // spool changes
-    status = await spoolChanges(opts.url, opts.database, opts.since, ws)
-    console.log(`Written ${status.numChanges} changes`)
+    status = await changesreader(opts.url, opts.database, opts.since, ws)
+    console.log('Finished fetching changes')
 
     // close the write stream
     ws.end()
