@@ -1,4 +1,4 @@
-const JSONStream = require('JSONStream')
+const jsonpour = require('jsonpour')
 const axios = require('axios')
 const changeProcessor = require('./changeProcessor.js')
 
@@ -39,7 +39,7 @@ const changesreader = async (url, db, since, ws) => {
       .on('error', (e) => {
         reject(e)
       })
-      .pipe(JSONStream.parse('results.*.doc'))
+      .pipe(jsonpour.parse('results.*.doc'))
       .pipe(changeProcessor())
       .pipe(ws)
   })
