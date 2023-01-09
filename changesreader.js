@@ -1,38 +1,55 @@
+const { URL } = require('url')
+const querystring = require('querystring')
+const stream = require('stream')
+const Readable = stream.Readable
 const jsonpour = require('jsonpour')
-const axios = require('axios')
+const undici = require('undici')
 const changeProcessor = require('./changeProcessor.js')
+const h = {
+  'content-type': 'application/json'
+}
 
 const changesreader = async (url, db, since, ws) => {
   return new Promise(async (resolve, reject) => {
-    let response, lastSeq
+    let response, lastSeq, opts, u
+
+    // parse URL
+    const parsed = new URL(url)
+    const plainURL = parsed.origin
+    if (parsed.username && parsed.password) {
+      h.Authorization = 'Basic ' + Buffer.from(`${parsed.username}:${parsed.password}`).toString('base64')
+    }
 
     // get lastSeq
-    const seqReq = {
-      baseURL: url,
-      url: `/${db}`,
-      method: 'get'
+    opts = {
+      method: 'get',
+      headers: h
     }
+    u = `${plainURL}/${db}`
     try {
-      const response = await axios.request(seqReq)
-      lastSeq = response.data.update_seq
-    } catch(e) {
+      response = await undici.fetch(u, opts)
+      const j = await response.json()
+      lastSeq = j.update_seq
+    } catch (e) {
       return reject(e)
     }
-  
+
     // spool changes
-    const req = {
-      baseURL: url,
-      url: `/${db}/_changes`,
+    opts = {
       method: 'get',
-      params: {
-        since: since,
-        include_docs: true,
-        seq_interval: 10000
-      },
-      responseType: 'stream'
+      headers: h
     }
-    response = await axios.request(req)
-    response.data
+    const qs = querystring.stringify({
+      since,
+      include_docs: true,
+      seq_interval: 10000
+    })
+    u = `${plainURL}/${db}/_changes?${qs}`
+    response = await undici.fetch(u, opts)
+
+    const readableWebStream = response.body
+    const readableNodeStream = Readable.fromWeb ? Readable.fromWeb(readableWebStream) : Readable.from(readableWebStream)
+    readableNodeStream
       .on('end', () => {
         resolve({ since: lastSeq })
       })
