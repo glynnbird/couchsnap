@@ -68,7 +68,7 @@ const start = async (opts) => {
     const ws = fs.createWriteStream(tempOutputFile)
 
     // spool changes
-    status = await changesreader(opts.url, opts.database, opts.since, ws)
+    status = await changesreader(opts.url, opts.database, opts.since, ws, opts.deletions)
 
     // close the write stream
     ws.end()

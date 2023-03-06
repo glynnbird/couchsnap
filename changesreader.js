@@ -9,7 +9,7 @@ const h = {
   'content-type': 'application/json'
 }
 
-const changesreader = async (url, db, since, ws) => {
+const changesreader = async (url, db, since, ws, deletions) => {
   return new Promise(async (resolve, reject) => {
     let response, lastSeq, opts, u
 
@@ -57,7 +57,7 @@ const changesreader = async (url, db, since, ws) => {
         reject(e)
       })
       .pipe(jsonpour.parse('results.*.doc'))
-      .pipe(changeProcessor())
+      .pipe(changeProcessor(deletions))
       .pipe(ws)
   })
 }

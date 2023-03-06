@@ -3,7 +3,7 @@
 Super-simple CouchDB snapshotting tool for creating incremental snapshots of the winning revisions of documents in a Apache CouchDB or Cloudant database.
 
 - winning revisions only of documents and design documents
-- no deletions
+- no deletions  (unless `--deletions true` is supplied).
 - no attachments
 - no conflicts
 
@@ -23,6 +23,10 @@ Environment variables:
 - `COUCH_DATABASE` - (optional) the name of the database to work with e.g. `orders`
 
 ## Usage
+
+- `--url/-u` - same as `COUCH_URL` environment variable.
+- `--database/-db/-d` - same as `COUCH_DATABASE environment variable.
+- `--deletions` - include deleted documents in the output. (Default: `false`).
 
 Put your CouchDB URL (with credentials) in an environment variable:
 
@@ -51,6 +55,13 @@ mydb-meta.json
 
 Ad infinitum.
 
+You may elect to include deleted documents by adding `--deletions true` e.g.
+
+```sh
+$ couchsnap --db mydb --deletions true
+...
+```
+
 ## Finding a document's history
 
 For a known document id e.g. `abc123`:
@@ -73,7 +84,7 @@ ls -t mydb-snapshot-* | xargs tac | couchimport --db mydb2 --type jsonl
 Some caveats:
 
 1. This only restores to a new empty database.
-2. Deleted documents are neither backed-up nor restored
+2. Deleted documents are neither backed-up nor restored (unless `--deletions true` is supplied).
 3. The restored documents will have a new `_rev` token. e.g. `1-abc123`. i.e. the restored database would be unsuitable for a replicating relationship with the original database (as they have different revision histories).
 4. Attachments are neither backud-up or restored.
 5. Conflicting document revisions are neither backed-up nor restored.

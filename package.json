@@ -1,6 +1,6 @@
 {
   "name": "couchsnap",
-  "version": "0.3.2",
+  "version": "0.4.0",
   "description": "Very minimal CouchDB snapshot tool",
   "main": "index.js",
   "repository": {
@@ -17,9 +17,9 @@
   },
   "homepage": "https://github.com/glynnbird/couchsnap#readme",
   "dependencies": {
-    "jsonpour": "^1.0.0",
-    "undici": "^5.14.0",
-    "yargs": "^17.6.2"
+    "jsonpour": "^1.0.2",
+    "undici": "^5.20.0",
+    "yargs": "^17.7.1"
   },
   "bin": {
     "couchsnap": "bin/couchsnap.bin.js"

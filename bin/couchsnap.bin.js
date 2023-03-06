@@ -6,6 +6,7 @@ const db = process.env.COUCH_DATABASE
 const args = require('yargs')
   .option('url', { alias: 'u', describe: 'CouchDB URL', default: url })
   .option('database', { alias: ['db', 'd'], describe: 'CouchDB database name', demandOption: !db, default: db })
+  .option('deletions', { describe: 'Include deletions', type: 'boolean', demandOption: false, default: false })
   .help('help')
   .argv
 

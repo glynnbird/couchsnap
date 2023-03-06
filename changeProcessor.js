@@ -1,14 +1,14 @@
 const stream = require('stream')
 
 // returns a stream transformer
-module.exports = function () {
+module.exports = function (deletions) {
   // create stream transformer
   const filter = new stream.Transform({ objectMode: true })
 
   // add _transform function
   filter._transform = function (obj, encoding, done) {
     // ignore deleted docs
-    if (obj._deleted) {
+    if (!deletions && obj._deleted) {
       return done()
     }
 
