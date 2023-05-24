@@ -18,8 +18,8 @@
   "homepage": "https://github.com/glynnbird/couchsnap#readme",
   "dependencies": {
     "jsonpour": "^1.0.2",
-    "undici": "^5.20.0",
-    "yargs": "^17.7.1"
+    "undici": "^5.22.1",
+    "yargs": "^17.7.2"
   },
   "bin": {
     "couchsnap": "bin/couchsnap.bin.js"
