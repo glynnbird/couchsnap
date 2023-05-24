@@ -32,7 +32,7 @@ const requestStream = async (opts) => {
     }
     const agent = parsedURL.protocol === 'http:' ? http : https
 
-    const req = http.request(options, (res) => {
+    const req = agent.request(options, (res) => {
       res.setEncoding('utf8')
       return resolve (res)
     })
