@@ -44,15 +44,15 @@ const changesreader = async (url, db, since, ws, deletions) => {
     opts.url = `${plainURL}/${db}/_changes?${qs}`
     response = await request.requestStream(opts)
     response
-      .on('end', () => {
-        resolve({ since: lastSeq })
-      })
       .on('error', (e) => {
         reject(e)
       })
       .pipe(jsonpour.parse('results.*.doc'))
       .pipe(changeProcessor(deletions))
       .pipe(ws)
+      .on('finish', () => {
+        resolve({ since: lastSeq })
+      })
   })
 }
 
