@@ -58,7 +58,7 @@ const start = async (opts) => {
   const meta = await loadMeta(opts.database)
   opts.since = meta.since
   meta.startTime = new Date().toISOString()
-  const outputFilename = `${meta.db}-snapshot-${meta.startTime}.jsonl`.replace(/:/g,"") // remove colon from time compliant filenames
+  const outputFilename = `${meta.db}-snapshot-${meta.startTime}.jsonl`.replace(/:/g,"") // remove colons for compliant filenames
   const tempOutputFile = `_tmp_${outputFilename}`
   let status
 
