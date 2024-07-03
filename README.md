@@ -40,7 +40,7 @@ Create a snapshot:
 $ couchsnap --db mydb
 spooling changes for mydb since 0
 Finished fetching changes
-mydb-snapshot-2022-11-09T16:04:06.195Z.jsonl
+mydb-snapshot-2022-11-09T160406.195Z.jsonl
 mydb-meta.json
 ```
 
@@ -49,7 +49,7 @@ At a later date, another snapshot can be taken:
 ```sh
 $ couchsnap --db mydb
 spooling changes for mydb since 23597-*****
-mydb-snapshot-2022-11-09T16:04:51.041Z.jsonl
+mydb-snapshot-2022-11-09T160451.041Z.jsonl
 mydb-meta.json
 ```
 
