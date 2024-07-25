@@ -1,59 +1,69 @@
 const { URL } = require('url')
+const { pipeline } = require('node:stream/promises')
 const querystring = require('querystring')
+const stream = require('stream')
+const Readable = stream.Readable
 const jsonpour = require('jsonpour')
-const request = require('./request.js')
 const changeProcessor = require('./changeProcessor.js')
 const h = {
   'content-type': 'application/json'
 }
 
 const changesreader = async (url, db, since, ws, deletions) => {
-  return new Promise(async (resolve, reject) => {
-    let response, lastSeq, opts, u
+  let response, j, lastSeq, opts, u
 
-    // parse URL
-    const parsed = new URL(url)
-    const plainURL = parsed.origin
-    if (parsed.username && parsed.password) {
-      h.Authorization = 'Basic ' + Buffer.from(`${parsed.username}:${parsed.password}`).toString('base64')
-    }
+  // parse URL
+  const parsed = new URL(url)
+  const plainURL = parsed.origin
+  if (parsed.username && parsed.password) {
+    h.Authorization = 'Basic ' + Buffer.from(`${parsed.username}:${parsed.password}`).toString('base64')
+  }
 
-    // get lastSeq
-    opts = {
-      url: `${plainURL}/${db}`,
-      method: 'get',
-      headers: h
-    }
-    try {
-      response = await request.requestJSON(opts)
-      lastSeq = response.update_seq
-    } catch (e) {
-      return reject(e)
-    }
+  // get lastSeq
+  opts = {
+    method: 'get',
+    headers: h
+  }
+  try {
+    u = `${plainURL}/${db}`
+    response = await fetch(u, opts)
+    j = await response.json()
+    lastSeq = j.update_seq
+  } catch (e) {
+    return reject(e)
+  }
 
-    // spool changes
-    opts = {
-      method: 'get',
-      headers: h
-    }
-    const qs = querystring.stringify({
-      since,
-      include_docs: true,
-      seq_interval: 10000
-    })
-    opts.url = `${plainURL}/${db}/_changes?${qs}`
-    response = await request.requestStream(opts)
-    response
-      .on('error', (e) => {
-        reject(e)
-      })
-      .pipe(jsonpour.parse('results.*.doc'))
-      .pipe(changeProcessor(deletions))
-      .pipe(ws)
-      .on('finish', () => {
-        resolve({ since: lastSeq })
-      })
+  // spool changes
+  opts = {
+    method: 'get',
+    headers: h
+  }
+  const qs = querystring.stringify({
+    since,
+    include_docs: true,
+    seq_interval: 10000
   })
+  u = `${plainURL}/${db}/_changes?${qs}`
+  response = await fetch(u, opts)
+  await pipeline(
+    Readable.fromWeb(response.body),
+    jsonpour.parse('results.*.doc'),
+    changeProcessor(deletions),
+    ws
+  )
+  return { since: lastSeq }
+
+  // response
+  //   .on('error', (e) => {
+  //     reject(e)
+  //   })
+  //   .pipe(jsonpour.parse('results.*.doc'))
+  //   .pipe(changeProcessor(deletions))
+  //   .pipe(ws)
+  //   .on('finish', () => {
+  //     resolve()
+  //   })
+
 }
 
 module.exports = changesreader
