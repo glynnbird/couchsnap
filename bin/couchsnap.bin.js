@@ -69,6 +69,6 @@ if (!values.url || !values.database) {
 
 // start the snapshot
 const couchsnap = require('../index.js')
-couchsnap.start(values)
+couchsnap(values)
   .then(console.log)
   .catch(console.error)

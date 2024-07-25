@@ -1,6 +1,83 @@
-const changesreader = require('./changesreader.js')
 const fs = require('fs')
-const URL = require('url').URL
+const { URL } = require('url')
+const { pipeline } = require('node:stream/promises')
+const querystring = require('querystring')
+const stream = require('stream')
+const Readable = stream.Readable
+const jsonpour = require('jsonpour')
+const pkg = require('./package.json')
+const h = {
+  'user-agent': `${pkg.name}@${pkg.version}`,
+  'content-type': 'application/json'
+}
+
+// stream-processing function. Removes deleted docs, drops the
+// _rev token and outputs a stringified object
+const changeProcessor = function (deletions) {
+  // create stream transformer
+  const filter = new stream.Transform({ objectMode: true })
+
+  // add _transform function
+  filter._transform = function (obj, encoding, done) {
+    // ignore deleted docs
+    if (!deletions && obj._deleted) {
+      return done()
+    }
+
+    // scrub the rev token
+    delete obj._rev
+
+    // turn object into a string
+    this.push(JSON.stringify(obj) + '\n')
+    done()
+  }
+  return filter
+}
+
+// fetches the database's current update_seq then spools the changes
+// feed through a streaming JSON parser to extract the docs
+const changesreader = async (url, db, since, ws, deletions) => {
+  let response, j, lastSeq, opts, u
+
+  // parse URL
+  const parsed = new URL(url)
+  const plainURL = parsed.origin
+  if (parsed.username && parsed.password) {
+    h.Authorization = 'Basic ' + Buffer.from(`${parsed.username}:${parsed.password}`).toString('base64')
+  }
+
+  // get lastSeq
+  opts = {
+    method: 'get',
+    headers: h
+  }
+  try {
+    u = `${plainURL}/${db}`
+    response = await fetch(u, opts)
+    j = await response.json()
+    lastSeq = j.update_seq
+  } catch (e) {
+    return reject(e)
+  }
+
+  // spool changes
+  const qs = querystring.stringify({
+    since,
+    include_docs: true,
+    seq_interval: 10000
+  })
+  u = `${plainURL}/${db}/_changes?${qs}`
+  response = await fetch(u, opts)
+
+  // stream pipeline
+  await pipeline(
+    Readable.fromWeb(response.body),
+    jsonpour.parse('results.*.doc'),
+    changeProcessor(deletions),
+    ws
+  )
+  return { since: lastSeq }
+}
 
 // calculate the filename where metadata is stored
 const calculateMetaFilename = (database) => {
@@ -38,7 +115,7 @@ const saveMeta = async (meta) => {
 }
 
 // start spooling and monitoring the changes feed
-const start = async (opts) => {
+const couchsnap = async (opts) => {
   // override defaults
   const defaults = {
     url: 'http://localhost:5984',
@@ -94,6 +171,4 @@ const start = async (opts) => {
   process.exit(0)
 }
 
-module.exports = {
-  start
-}
+module.exports = couchsnap
