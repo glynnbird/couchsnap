@@ -5,6 +5,7 @@ const querystring = require('querystring')
 const stream = require('stream')
 const Readable = stream.Readable
 const jsonpour = require('jsonpour')
+const ccurllib = require('ccurllib')
 const pkg = require('./package.json')
 const h = {
   'user-agent': `${pkg.name}@${pkg.version}`,
@@ -39,39 +40,35 @@ const changeProcessor = function (deletions) {
 const changesreader = async (url, db, since, ws, deletions) => {
   let response, j, lastSeq, opts, u
 
-  // parse URL
-  const parsed = new URL(url)
-  const plainURL = parsed.origin
-  if (parsed.username && parsed.password) {
-    h.Authorization = 'Basic ' + Buffer.from(`${parsed.username}:${parsed.password}`).toString('base64')
-  }
-
   // get lastSeq
   opts = {
     method: 'get',
-    headers: h
+    headers: h,
+    url: `${url}/${db}`
   }
   try {
-    u = `${plainURL}/${db}`
-    response = await fetch(u, opts)
-    j = await response.json()
+    response = await ccurllib.request(opts)
+    if (response.status >= 400) {
+      throw new Error("Cannot read database")
+    }
+    j = response.result
     lastSeq = j.update_seq
   } catch (e) {
     return reject(e)
   }
 
   // spool changes
-  const qs = querystring.stringify({
+  opts.qs = {
     since,
     include_docs: true,
     seq_interval: 10000
-  })
-  u = `${plainURL}/${db}/_changes?${qs}`
-  response = await fetch(u, opts)
+  }
+  opts.url = `${url}/${db}/_changes`
+  const responseStream = await ccurllib.requestStream(opts)
 
   // stream pipeline
   await pipeline(
-    Readable.fromWeb(response.body),
+    responseStream,
     jsonpour.parse('results.*.doc'),
     changeProcessor(deletions),
     ws

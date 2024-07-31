@@ -21,6 +21,7 @@ Environment variables:
 
 - `COUCH_URL` - the URL of your CouchDB service e.g. `http://user:pass@myhost.com`
 - `COUCH_DATABASE` - (optional) the name of the database to work with e.g. `orders`
+- `IAM_API_KEY` - (optional) if using IBM IAM for authentication
 
 ## Usage
 
