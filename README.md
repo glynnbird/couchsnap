@@ -56,10 +56,10 @@ mydb-meta.json
 
 Ad infinitum.
 
-You may elect to include deleted documents by adding `--deletions true` e.g.
+You may elect to include deleted documents by adding `--deletions` e.g.
 
 ```sh
-$ couchsnap --db mydb --deletions true
+$ couchsnap --db mydb --deletions
 ...
 ```
 
@@ -85,7 +85,7 @@ ls -t mydb-snapshot-* | xargs tac | couchimport --db mydb2 --type jsonl
 Some caveats:
 
 1. This only restores to a new empty database.
-2. Deleted documents are neither backed-up nor restored (unless `--deletions true` is supplied).
+2. Deleted documents are neither backed-up nor restored (unless `--deletions` is supplied).
 3. The restored documents will have a new `_rev` token. e.g. `1-abc123`. i.e. the restored database would be unsuitable for a replicating relationship with the original database (as they have different revision histories).
 4. Attachments are neither backud-up or restored.
 5. Conflicting document revisions are neither backed-up nor restored.
