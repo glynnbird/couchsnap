@@ -1,12 +1,11 @@
-const fs = require('fs')
-const { URL } = require('url')
-const { pipeline } = require('node:stream/promises')
-const querystring = require('querystring')
-const stream = require('stream')
-const Readable = stream.Readable
-const jsonpour = require('jsonpour')
-const ccurllib = require('ccurllib')
-const pkg = require('./package.json')
+import { Transform }  from 'node:stream'
+import { readFileSync, writeFileSync, createWriteStream, unlinkSync, renameSync } from 'node:fs'
+import { pipeline } from 'node:stream/promises'
+import * as jsonpour from 'jsonpour'
+import * as ccurllib from 'ccurllib'
+
+// load package meta data
+const pkg = JSON.parse(readFileSync('./package.json', { encoding: 'utf8' }))
 const h = {
   'user-agent': `${pkg.name}@${pkg.version}`,
   'content-type': 'application/json'
@@ -16,7 +15,7 @@ const h = {
 // _rev token and outputs a stringified object
 const changeProcessor = function (deletions) {
   // create stream transformer
-  const filter = new stream.Transform({ objectMode: true })
+  const filter = new Transform({ objectMode: true })
 
   // add _transform function
   filter._transform = function (obj, encoding, done) {
@@ -89,7 +88,7 @@ const loadMeta = async (database) => {
     db: database
   }
   try {
-    meta = JSON.parse(fs.readFileSync(filename, { encoding: 'utf8' }))
+    meta = JSON.parse(readFileSync(filename, { encoding: 'utf8' }))
   } catch (e) {
     // file does not exist or is invalid
   }
@@ -108,11 +107,11 @@ const shortenSince = (since) => {
 // save the latest meta data JSON
 const saveMeta = async (meta) => {
   const filename = calculateMetaFilename(meta.db)
-  fs.writeFileSync(filename, JSON.stringify(meta), { encoding: 'utf8' })
+  writeFileSync(filename, JSON.stringify(meta), { encoding: 'utf8' })
 }
 
 // start spooling and monitoring the changes feed
-const couchsnap = async (opts) => {
+export async function couchsnap(opts) {
   // override defaults
   const defaults = {
     url: 'http://localhost:5984',
@@ -139,7 +138,7 @@ const couchsnap = async (opts) => {
   try {
     // create new output file
     console.log(`spooling changes for ${meta.db} since ${shortenSince(meta.since)}`)
-    const ws = fs.createWriteStream(tempOutputFile)
+    const ws = createWriteStream(tempOutputFile)
 
     // spool changes
     status = await changesreader(opts.url, opts.database, opts.since, ws, opts.deletions)
@@ -150,12 +149,12 @@ const couchsnap = async (opts) => {
     console.error('Failed to spool changes from CouchDB')
     console.error(e.toString())
     // remove temp file
-    fs.unlinkSync(tempOutputFile)
+    unlinkSync(tempOutputFile)
     process.exit(2)
   }
 
   // copy tmp file to actual output file
-  fs.renameSync(tempOutputFile, outputFilename)
+  renameSync(tempOutputFile, outputFilename)
   console.log(outputFilename)
 
   // write new meta data
@@ -168,4 +167,3 @@ const couchsnap = async (opts) => {
   process.exit(0)
 }
 
-module.exports = couchsnap

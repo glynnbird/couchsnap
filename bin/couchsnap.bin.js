@@ -1,4 +1,7 @@
 #!/usr/bin/env node
+import { readFileSync } from 'node:fs'
+import { parseArgs } from 'node:util'
+import { couchsnap } from '../index.js'
 
 const syntax = 
 `Syntax:
@@ -9,8 +12,7 @@ const syntax =
 `
 const url = process.env.COUCH_URL || 'http://localhost:5984'
 const db = process.env.COUCH_DATABASE
-const app = require('../package.json')
-const { parseArgs } = require('node:util')
+const app = JSON.parse(readFileSync('./package.json', { encoding: 'utf8' }))
 const argv = process.argv.slice(2)
 const options = {
   url: {
@@ -68,7 +70,6 @@ if (!values.url || !values.database) {
 }
 
 // start the snapshot
-const couchsnap = require('../index.js')
 couchsnap(values)
   .then(console.log)
   .catch(console.error)

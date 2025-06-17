@@ -91,6 +91,17 @@ Some caveats:
 5. Conflicting document revisions are neither backed-up nor restored.
 6. Secondary index definitions (in design documents) are backed up but will need to be rebuilt on restore.
 
+## Programmatic usage
+
+```js
+import { couchsnap } from 'couchsnap'
+
+const opts = {
+  url: 'https://username:password@mycouchdb.com',
+  database: 'cities'
+}
+await couchsnap(opts)
+```
 
 ## How does it work?
 
