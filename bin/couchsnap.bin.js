@@ -2,6 +2,7 @@
 import { readFileSync } from 'node:fs'
 import { parseArgs } from 'node:util'
 import { couchsnap } from '../index.js'
+import path from 'node:path'
 
 const syntax = 
 `Syntax:
@@ -12,7 +13,7 @@ const syntax =
 `
 const url = process.env.COUCH_URL || 'http://localhost:5984'
 const db = process.env.COUCH_DATABASE
-const app = JSON.parse(readFileSync('./package.json', { encoding: 'utf8' }))
+const pkg = JSON.parse(readFileSync(path.join(import.meta.dirname, '..', 'package.json'), { encoding: 'utf8' }))
 const argv = process.argv.slice(2)
 const options = {
   url: {

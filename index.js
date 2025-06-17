@@ -1,11 +1,12 @@
 import { Transform }  from 'node:stream'
 import { readFileSync, writeFileSync, createWriteStream, unlinkSync, renameSync } from 'node:fs'
 import { pipeline } from 'node:stream/promises'
+import path from 'node:path'
 import * as jsonpour from 'jsonpour'
 import * as ccurllib from 'ccurllib'
 
 // load package meta data
-const pkg = JSON.parse(readFileSync('./package.json', { encoding: 'utf8' }))
+const pkg = JSON.parse(readFileSync(path.join(import.meta.dirname, 'package.json'), { encoding: 'utf8' }))
 const h = {
   'user-agent': `${pkg.name}@${pkg.version}`,
   'content-type': 'application/json'
